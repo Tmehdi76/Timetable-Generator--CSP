@@ -260,7 +260,6 @@
                 });
             }
         
-            // Rest of your code...
         });
         </script>
     <script>
@@ -411,7 +410,7 @@
                     document.getElementById('error').style.display = 'none';
                     
                     // Clear cached solution and fetch new data
-                    fetch(`${API_BASE_URL}/clear_cache`, {
+                    fetch(`https://timetable-generator-csp-26um.onrender.com/clear_cache`, {
                         method: 'POST'
                     })
                     .then(() => fetchTimetableData())
