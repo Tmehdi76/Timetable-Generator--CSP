@@ -41,7 +41,9 @@ Clone the repository:
 
 bash
 git clone https://github.com/yourusername/timetable-generator-csp.git
+
 cd timetable-generator-csp
+
 Set up virtual environment:
 
 bash
