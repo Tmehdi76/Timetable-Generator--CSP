@@ -224,20 +224,6 @@
                 // Initialize legend once
                 function initializeLegend() {
                     const legend = document.getElementById('legend');
-                    legend.innerHTML = `
-                        <div class="legend-item">
-                            <div class="legend-color lecture"></div>
-                            <span>Lecture</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="legend-color td"></div>
-                            <span>TD</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="legend-color tp"></div>
-                            <span>TP</span>
-                        </div>
-                    `;
     
                     // Add course colors
                     Object.entries(COURSE_COLORS).forEach(([course, color]) => {
