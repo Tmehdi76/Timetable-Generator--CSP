@@ -297,6 +297,12 @@ CORS(app)  # Enable CORS for all routes
 def index():
     return render_template('timetable.html')
 
+@app.route('/clear_cache', methods=['POST'])
+def clear_cache():
+    global cached_solution
+    cached_solution = None
+    return jsonify({'status': 'cache_cleared'})
+
 @app.route('/generate_timetable')
 def generate_timetable():
     global cached_solution

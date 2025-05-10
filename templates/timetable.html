@@ -38,6 +38,16 @@
             flex-wrap: wrap;
             gap: 10px;
         }
+
+        #reload-btn {
+            background-color: #2196F3;
+            color: white;
+            border-color: #0b7dda;
+        }
+
+        #reload-btn:hover {
+            background-color: #0b7dda;
+        }
         
         .group-btn {
             padding: 8px 15px;
@@ -170,6 +180,12 @@
     
     <div id="content" style="display: none;">
         <div class="controls">
+            <div class="controls">
+                <!-- Existing group buttons... -->
+                <button id="reload-btn" class="group-btn" style="background-color: #2196F3;">
+                    Generate New Timetable
+                </button>
+            </div>
             <button class="group-btn active" data-group="ALL">All Groups</button>
             <button class="group-btn" data-group="G1">Group 1</button>
             <button class="group-btn" data-group="G2">Group 2</button>
@@ -227,7 +243,7 @@
             }
         
             function fetchTimetableData() {
-                return fetch('http://localhost:5000/generate_timetable', {
+                return fetch('https://timetable-generator-csp-26um.onrender.com/generate_timetable', {
                     mode: 'cors',
                     headers: {
                         'Content-Type': 'application/json',
@@ -391,6 +407,19 @@
                     });
                 });
                 
+                document.getElementById('reload-btn').addEventListener('click', function() {
+                    // Show loading state
+                    document.getElementById('content').style.display = 'none';
+                    document.getElementById('loading').style.display = 'block';
+                    document.getElementById('error').style.display = 'none';
+                    
+                    // Clear cached solution and fetch new data
+                    fetch(`${API_BASE_URL}/clear_cache`, {
+                        method: 'POST'
+                    })
+                    .then(() => fetchTimetableData())
+                    .catch(error => showError(error.message));
+                });
                 // Initialize with "All Groups" view
                 generateTimetable('ALL');
             }
