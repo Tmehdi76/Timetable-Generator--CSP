@@ -200,221 +200,206 @@
             <!-- Course colors will be added by JavaScript -->
         </div>
     </div>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // First test the connection
-            testConnection()
-                .then(() => {
-                    // If connection test passes, fetch the real data
-                    return fetchTimetableData();
-                })
-                .catch(error => {
-                    showError(`Connection failed: ${error.message}`);
-                });
-        
-            function testConnection() {
-                return fetch('http://localhost:5000/', {
-                    mode: 'cors',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Backend not responding');
-                    }
-                    return response.text();
-                });
-            }
-        
-            function fetchTimetableData() {
-                return fetch('https://timetable-generator-csp-26um.onrender.com/generate_timetable', {
-                    mode: 'cors',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.error) {
-                        throw new Error(data.error);
-                    }
-                    initializeTimetable(data);
-                });
-            }
-        
-        });
-        </script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Fetch the timetable data from the backend
-            fetchTimetableData();
-            
-            // Function to fetch data with retry logic
-            function fetchTimetableData(retries = 3, delay = 1000) {
-                fetch('/generate_timetable')
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error(`HTTP error! status: ${response.status}`);
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        if (data.error) {
-                            showError(data.error);
-                            return;
-                        }
-                        initializeTimetable(data);
-                    })
-                    .catch(error => {
-                        if (retries > 0) {
-                            console.log(`Retrying... ${retries} attempts left`);
-                            setTimeout(() => fetchTimetableData(retries - 1, delay * 2), delay);
-                        } else {
-                            showError(`Failed to load timetable: ${error.message}`);
-                        }
-                    });
-            }
-            
-            function initializeTimetable(data) {
-                // Hide loading, show content
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('content').style.display = 'block';
-                
-                // Process the data
-                const timetableData = data.timetable;
-                const courseColors = data.course_colors;
-                const days = data.days;
-                const slotsPerDay = data.slots_per_day;
-                const groups = data.groups;
-                
-                // Add course colors to legend
-                const legend = document.getElementById('legend');
-                for (const course in courseColors) {
-                    const legendItem = document.createElement('div');
-                    legendItem.className = 'legend-item';
-                    
-                    const colorBox = document.createElement('div');
-                    colorBox.className = 'legend-color';
-                    colorBox.style.backgroundColor = courseColors[course];
-                    
-                    const label = document.createElement('span');
-                    label.textContent = course;
-                    
-                    legendItem.appendChild(colorBox);
-                    legendItem.appendChild(label);
-                    legend.appendChild(legendItem);
-                }
-                
-                // Generate the timetable HTML
-                function generateTimetable(group) {
-    const timetableEl = document.getElementById('timetable');
-    timetableEl.innerHTML = '';
     
-    const groupData = timetableData[group];
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // Define constant course colors (should match backend)
+                const COURSE_COLORS = {
+                    "Sécurité": "#1f77b4",
+                    "Méthodes formelles": "#ff7f0e",
+                    "Analyse numérique": "#2ca02c",
+                    "Entrepreneuriat": "#d62728",
+                    "Recherche opérationnelle 2": "#9467bd",
+                    "Architecture Distribuée": "#8c564b",
+                    "Réseaux 2": "#e377c2",
+                    "IA": "#7f7f7f"
+                };
     
-    for (const day of days) {
-        const dayColumn = document.createElement('div');
-        dayColumn.className = 'day-column';
-        
-        const dayHeader = document.createElement('div');
-        dayHeader.className = 'day-header';
-        dayHeader.textContent = day;
-        dayColumn.appendChild(dayHeader);
-        
-        for (const slot of slotsPerDay[day]) {
-            const timeSlot = document.createElement('div');
-            timeSlot.className = 'time-slot';
-            
-            const slotHeader = document.createElement('div');
-            slotHeader.className = 'slot-header';
-            slotHeader.textContent = `Slot ${slot}`;
-            timeSlot.appendChild(slotHeader);
-            
-            const sessions = groupData[day][slot];
-            
-            if (sessions.length === 0) {
-                const emptySlot = document.createElement('div');
-                emptySlot.className = 'empty-slot';
-                emptySlot.textContent = 'Free';
-                timeSlot.appendChild(emptySlot);
-            } else {
-                // Sort sessions: lectures first, then TDs, then TPs
-                const sortedSessions = [...sessions].sort((a, b) => {
-                    const typeOrder = {lecture: 0, td: 1, tp: 2};
-                    return typeOrder[a.type] - typeOrder[b.type];
-                });
-                
-                for (const session of sortedSessions) {
-                    const sessionEl = document.createElement('div');
-                    sessionEl.className = `session ${session.type}`;
-                    
-                    // Use the base course name for color (remove group if present)
-                    const baseCourse = session.course.split(' (')[0];
-                    sessionEl.style.backgroundColor = courseColors[baseCourse];
-                    
-                    let sessionText = session.course;
-                    if (session.type === 'lecture') {
-                        sessionText += '\nLecture';
-                    } else if (session.type === 'td') {
-                        sessionText += '\nTD';
-                    } else if (session.type === 'tp') {
-                        sessionText += '\nTP';
-                    }
-                    
-                    sessionEl.textContent = sessionText;
-                    timeSlot.appendChild(sessionEl);
-                }
-            }
-            
-            dayColumn.appendChild(timeSlot);
-        }
-        
-        timetableEl.appendChild(dayColumn);
-    }
-}
-                
-                // Set up group buttons
-                const groupButtons = document.querySelectorAll('.group-btn');
-                groupButtons.forEach(button => {
-                    button.addEventListener('click', () => {
-                        groupButtons.forEach(btn => btn.classList.remove('active'));
-                        button.classList.add('active');
-                        
-                        const group = button.dataset.group;
-                        generateTimetable(group);
+                // Define API base URL
+                const API_BASE_URL = window.location.hostname === 'localhost' 
+                    ? 'http://localhost:5000' 
+                    : 'https://timetable-generator-csp-26um.onrender.com';
+    
+                // Initialize legend once
+                function initializeLegend() {
+                    const legend = document.getElementById('legend');
+                    legend.innerHTML = `
+                        <div class="legend-item">
+                            <div class="legend-color lecture"></div>
+                            <span>Lecture</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color td"></div>
+                            <span>TD</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color tp"></div>
+                            <span>TP</span>
+                        </div>
+                    `;
+    
+                    // Add course colors
+                    Object.entries(COURSE_COLORS).forEach(([course, color]) => {
+                        const legendItem = document.createElement('div');
+                        legendItem.className = 'legend-item';
+                        legendItem.innerHTML = `
+                            <div class="legend-color" style="background-color: ${color}"></div>
+                            <span>${course}</span>
+                        `;
+                        legend.appendChild(legendItem);
                     });
-                });
-                
-                document.getElementById('reload-btn').addEventListener('click', function() {
+                }
+    
+                // Call this once when page loads
+                initializeLegend();
+    
+                // Main function to fetch timetable data
+                function fetchTimetableData(retries = 3, delay = 1000) {
                     // Show loading state
                     document.getElementById('content').style.display = 'none';
                     document.getElementById('loading').style.display = 'block';
                     document.getElementById('error').style.display = 'none';
+    
+                    fetch(`${API_BASE_URL}/generate_timetable`)
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! status: ${response.status}`);
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            if (data.error) {
+                                throw new Error(data.error);
+                            }
+                            initializeTimetable(data);
+                        })
+                        .catch(error => {
+                            if (retries > 0) {
+                                console.log(`Retrying... ${retries} attempts left`);
+                                setTimeout(() => fetchTimetableData(retries - 1, delay * 2), delay);
+                            } else {
+                                showError(`Failed to load timetable: ${error.message}`);
+                            }
+                        });
+                }
+    
+                function initializeTimetable(data) {
+                    // Hide loading, show content
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('content').style.display = 'block';
                     
-                    // Clear cached solution and fetch new data
-                    fetch(`https://timetable-generator-csp-26um.onrender.com/clear_cache`, {
-                        method: 'POST'
-                    })
-                    .then(() => fetchTimetableData())
-                    .catch(error => showError(error.message));
-                });
-                // Initialize with "All Groups" view
-                generateTimetable('ALL');
-            }
-            
-            function showError(message) {
-                document.getElementById('loading').style.display = 'none';
-                const errorEl = document.getElementById('error');
-                errorEl.textContent = message;
-                errorEl.style.display = 'block';
-            }
-        });
-    </script>
+                    // Process the data
+                    const timetableData = data.timetable;
+                    const days = data.days;
+                    const slotsPerDay = data.slots_per_day;
+                    const groups = data.groups;
+                    
+                    // Generate the timetable HTML
+                    function generateTimetable(group) {
+                        const timetableEl = document.getElementById('timetable');
+                        timetableEl.innerHTML = '';
+                        
+                        const groupData = timetableData[group];
+                        
+                        for (const day of days) {
+                            const dayColumn = document.createElement('div');
+                            dayColumn.className = 'day-column';
+                            
+                            const dayHeader = document.createElement('div');
+                            dayHeader.className = 'day-header';
+                            dayHeader.textContent = day;
+                            dayColumn.appendChild(dayHeader);
+                            
+                            for (const slot of slotsPerDay[day]) {
+                                const timeSlot = document.createElement('div');
+                                timeSlot.className = 'time-slot';
+                                
+                                const slotHeader = document.createElement('div');
+                                slotHeader.className = 'slot-header';
+                                slotHeader.textContent = `Slot ${slot}`;
+                                timeSlot.appendChild(slotHeader);
+                                
+                                const sessions = groupData[day][slot];
+                                
+                                if (sessions.length === 0) {
+                                    const emptySlot = document.createElement('div');
+                                    emptySlot.className = 'empty-slot';
+                                    emptySlot.textContent = 'Free';
+                                    timeSlot.appendChild(emptySlot);
+                                } else {
+                                    const sortedSessions = [...sessions].sort((a, b) => {
+                                        const typeOrder = {lecture: 0, td: 1, tp: 2};
+                                        return typeOrder[a.type] - typeOrder[b.type];
+                                    });
+                                    
+                                    for (const session of sortedSessions) {
+                                        const sessionEl = document.createElement('div');
+                                        sessionEl.className = `session ${session.type}`;
+                                        
+                                        const baseCourse = session.course.split(' (')[0];
+                                        sessionEl.style.backgroundColor = COURSE_COLORS[baseCourse];
+                                        
+                                        let sessionText = session.course;
+                                        if (session.type === 'lecture') {
+                                            sessionText += '\nLecture';
+                                        } else if (session.type === 'td') {
+                                            sessionText += '\nTD';
+                                        } else if (session.type === 'tp') {
+                                            sessionText += '\nTP';
+                                        }
+                                        
+                                        sessionEl.textContent = sessionText;
+                                        timeSlot.appendChild(sessionEl);
+                                    }
+                                }
+                                
+                                dayColumn.appendChild(timeSlot);
+                            }
+                            
+                            timetableEl.appendChild(dayColumn);
+                        }
+                    }
+                    
+                    // Set up group buttons
+                    document.querySelectorAll('.group-btn').forEach(button => {
+                        if (!button.id) { // Skip the reload button
+                            button.addEventListener('click', () => {
+                                document.querySelectorAll('.group-btn').forEach(btn => 
+                                    btn.classList.remove('active'));
+                                button.classList.add('active');
+                                generateTimetable(button.dataset.group);
+                            });
+                        }
+                    });
+                    
+                    // Set up reload button
+                    document.getElementById('reload-btn').addEventListener('click', function() {
+                        // Show loading state with specific message
+                        document.getElementById('loading').textContent = 'Generating new timetable...';
+                        fetch(`https://timetable-generator-csp-26um.onrender.com/clear_cache`, {
+                            method: 'POST'
+                        })
+                        .then(() => fetchTimetableData())
+                        .catch(error => showError(error.message));
+                    });
+                    
+                    // Initialize with "All Groups" view
+                    generateTimetable('ALL');
+                }
+                
+                function showError(message) {
+                    document.getElementById('loading').style.display = 'none';
+                    const errorEl = document.getElementById('error');
+                    errorEl.textContent = message;
+                    errorEl.style.display = 'block';
+                    console.error(message);
+                }
+    
+                // Initial data fetch
+                fetchTimetableData();
+            });
+        </script>
+    
 </body>
 </html>

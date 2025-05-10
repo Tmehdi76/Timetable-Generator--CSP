@@ -227,7 +227,16 @@ def backtrack(assignment):
 def process_solution_for_web(solution):
     if not solution:
         return None
-    
+    course_colors = {
+        "Sécurité": "#1f77b4",
+        "Méthodes formelles": "#ff7f0e",
+        "Analyse numérique": "#2ca02c",
+        "Entrepreneuriat": "#d62728",
+        "Recherche opérationnelle 2": "#9467bd",
+        "Architecture Distribuée": "#8c564b",
+        "Réseaux 2": "#e377c2",
+        "IA": "#7f7f7f"
+    }
     timetable = {}
     for group in groups + ["ALL"]:
         timetable[group] = {}
